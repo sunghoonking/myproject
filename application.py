@@ -221,12 +221,12 @@ def get_info():
     calender_info = []
     for index_cal_private in find_cal_private:
         if 'private_cal' in index_cal_private:
-            calender_info.applicationend(index_cal_private)
+            calender_info.append(index_cal_private)
 
     if team_name is not None:
         for index_cal_team in find_cal_team:
             if 'team_cal' in index_cal_team:
-                calender_info.applicationend(index_cal_team)
+                calender_info.append(index_cal_team)
 
     user_info['calender_info'] = calender_info
 
@@ -494,8 +494,8 @@ def post_study_time_graph():
     day_list = []
     day_time_list = []
     for i in range(31):
-        day_list.applicationend(i)
-        day_time_list.applicationend(0)
+        day_list.append(i)
+        day_time_list.append(0)
 
     for day in monthly_user_data:
         day_time_list[day['day']] = day['study_time']
@@ -519,7 +519,7 @@ def post_weekly_avg_graph():
             'weekday': i}, {'_id': False}))
 
         # 만약 데이터가 없는 날짜는 0으로 처리한다.
-        weekday_avg_study_time_list.applicationend(0)
+        weekday_avg_study_time_list.append(0)
 
         # 평균구하기
         weekday_sum = 0
