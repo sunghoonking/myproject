@@ -1,9 +1,9 @@
 import jwt
 
-from my_settings   import SECRET
-from functools     import wraps
-from flask 		   import request, jsonify
-from pymongo       import MongoClient
+from my_settings import SECRET
+from functools import wraps
+from flask import request, jsonify
+from pymongo import MongoClient
 from bson.objectid import ObjectId
 import os
 from flask_cors import CORS
