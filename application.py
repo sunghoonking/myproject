@@ -7,7 +7,7 @@ from datetime import datetime, date, timedelta
 from decorator import login_required
 from flask import Flask, render_template, jsonify, request
 from pymongo import MongoClient
-
+# from my_settings import SECRET
 application = Flask(__name__)
 
 client = MongoClient(os.environ.get("MONGO_DB_PATH"))

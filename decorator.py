@@ -1,6 +1,6 @@
 import jwt
 
-from my_settings import SECRET
+# from my_settings import SECRET
 from functools import wraps
 from flask import request, jsonify
 from pymongo import MongoClient
@@ -10,6 +10,7 @@ from flask_cors import CORS
 
 client = MongoClient(os.environ.get("MONGO_DB_PATH"))
 db = client.dbtest
+SECRET = (os.environ.get("SECRET"))
 # cors
 
 
