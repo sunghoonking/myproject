@@ -4,7 +4,6 @@ import jwt
 from flask_cors import CORS
 import os
 from datetime import datetime, date, timedelta
-
 from decorator import login_required
 from flask import Flask, render_template, jsonify, request
 from pymongo import MongoClient
