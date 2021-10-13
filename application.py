@@ -1,12 +1,10 @@
 import re
 import bcrypt
 import jwt
-import pymongo
-import time
 from flask_cors import CORS
 import os
 from datetime import datetime, date, timedelta
-from my_settings import SECRET
+
 from decorator import login_required
 from flask import Flask, render_template, jsonify, request
 from pymongo import MongoClient
@@ -17,7 +15,7 @@ client = MongoClient(os.environ.get("MONGO_DB_PATH"))
 db = client.dbtest
 # cors
 cors = CORS(application, resources={r"/*": {"origins": "*"}})
-
+SECRET = (os.environ.get("SECRET"))
 
 # 시작페이지
 @application.route('/')
