@@ -8,6 +8,7 @@ from datetime import datetime, date, timedelta
 from decorator import login_required
 from flask import Flask, render_template, jsonify, request
 from pymongo import MongoClient
+
 # from my_settings import SECRET
 application = Flask(__name__)
 
@@ -17,6 +18,7 @@ db = client.dbtest
 # cors
 cors = CORS(application, resources={r"/*": {"origins": "*"}})
 SECRET = (os.environ.get("SECRET"))
+
 
 # 시작페이지
 @application.route('/')
@@ -237,11 +239,10 @@ def post_new_password():
 @login_required
 def withdrawal():
     user_id = request.user['_id']
-    print(user_id)
 
     db.user.delete_many({'_id': user_id})
     db.time.delete_many({'user_id': user_id})
-    db.team.delete_many({'members': user_id})
+    db.team.delete_many({'user_id': user_id})
     db.user_info.delete_many({'user_id': user_id})
 
     return jsonify({'msg': 'SUCCESS'})
@@ -280,6 +281,7 @@ def get_info():
     # 유저 정보로 캘린더 검색
     find_cal_private = db.calender.find_one({'user_id': user_id})
     find_cal_team = db.calenderTeam.find_one({'team_name': team_name})
+
     # 개인캘린더가 없을 시 하나 추가
     if find_cal_private is None:
         db.calender.insert_one({'user_id': user_id, 'calender_count': 1, 'private_cal1': {}})
@@ -696,10 +698,7 @@ def get_goal_modal():
     if done_hour == 0:
         percent = 0
     elif done_hour != 0:
-        print(done_hour)
-        print(goal_hour)
         percent = round((done_hour / goal_hour) * 100)
-        print(percent)
 
     return jsonify({
         'string_start_date': string_start_date,
@@ -728,6 +727,7 @@ def post_nickname_modal():
     }})
 
     return jsonify({'msg': '성공'})
+
 
 # 닉네임 데이터 주기
 @application.route('/nickname-modal', methods=['GET'])
@@ -785,13 +785,10 @@ def create_team():
     user_id = request.user['_id']
     team_name = request.form['team']
 
-    # 팀이름 중복확인
-    if db.team.find_one({'team': team_name}) is not None:
-        return jsonify({'msg': '중복된 팀이름'})
-
     doc = {
         'team': team_name,
-        'members': user_id,
+        'user_id': user_id,
+        'position': "팀장"
     }
     db.team.insert_one(doc)
     db.user.update_one({'_id': user_id}, {'$set': {'team': team_name}})
@@ -805,11 +802,36 @@ def create_team():
 def team_name_check():
     team_name = request.form['team']
     team = db.user.find_one({'team': team_name})
+    team_validation = re.compile(r'(?=.*[^\w\s])')
 
-    if team is None:
+    # 특수문자 확인
+    if team_validation.match(team_name):
+        return jsonify({"msg": "특수문자를 제외하고 작성해주세요"})
+
+    elif team is None:
         return jsonify({"msg": '사용할 수 있는 팀 이름입니다.'})
+    else:
+        return jsonify({'msg': '중복되는 팀 이름입니다. 다시 입력해주세요.'})
 
-    return jsonify({'msg': '중복되는 팀 이름입니다. 다시 입력해주세요.'})
+
+# 팀에 초대됐을 때
+@application.route('/invite-team', methods=['POST'])
+@login_required
+def invite_team():
+    user_id = request.user['_id']
+    team_name = request.form['team']
+
+    if db.user.find_one({'team': team_name}) is not None:
+        doc = {
+            'team': team_name,
+            'user_id': user_id,
+            'position': "팀원"
+        }
+        db.team.insert_one(doc)
+        db.user.update_one({'_id': user_id}, {'$set': {'team': team_name}})
+        return jsonify({"msg": '초대받은 팀에 가입되었습니다.'})
+
+    return jsonify({'msg': '존재하지 않는 팀입니다. 팀 이름을 확인해주세요.'})
 
 
 # 유저 소속팀 이름 가져오기
@@ -859,13 +881,17 @@ def delete_task():
 
 
 # 할 일 완료
-@application.route('/task-done', methods=['POST'])
+@application.route('/change-done', methods=['POST'])
 @login_required
-def done_task():
+def change_done():
     team = request.form['team']
     task = request.form['task']
     done = request.form['done']
-    db.team_task.update({'team': team, 'task': task}, {'$set': {'done': done}})
+    if done == "false":
+        db.team_task.update({'team': team, 'task': task}, {'$set': {'done': "true"}})
+    else:
+        db.team_task.update({'team': team, 'task': task}, {'$set': {'done': "false"}})
+
     return {"result": "success"}
 
 
@@ -877,6 +903,31 @@ def check_status():
 
     user = list(db.user.find({'team': team}, {'_id': False}))
     return jsonify({'user_data': user})
+
+
+# 체크 리스트 progress bar
+@application.route('/get-progressbar', methods=['POST'])
+@login_required
+def get_progressbar():
+    team = request.user['team']
+
+    taskstatus = list(db.team_task.find({'team': team}, {'_id': False, 'done': True}))
+
+    done_count = 0
+    doing_count = 0
+    percent = 0
+
+    if len(taskstatus) == 0:
+        return jsonify({'percent': percent, 'done_count': done_count})
+    else:
+        for status in taskstatus:
+            if status['done'] == 'true':
+                done_count += 1
+            else:
+                doing_count += 1
+
+        percent = f'{((done_count / len(taskstatus)) * 100):.0f}'
+        return jsonify({'percent': percent, 'done_count': done_count})
 
 
 if __name__ == '__main__':
